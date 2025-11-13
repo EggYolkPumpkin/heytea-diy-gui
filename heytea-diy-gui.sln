@@ -1,0 +1,25 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.13.35913.81 d17.13
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "heytea-diy-gui", "heytea-diy-gui.csproj", "{D1D6BB24-138B-457A-8B52-98092DB02847}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{D1D6BB24-138B-457A-8B52-98092DB02847}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D1D6BB24-138B-457A-8B52-98092DB02847}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D1D6BB24-138B-457A-8B52-98092DB02847}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D1D6BB24-138B-457A-8B52-98092DB02847}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {559FCF2D-954E-4B48-A6C8-58331393C32C}
+	EndGlobalSection
+EndGlobal
