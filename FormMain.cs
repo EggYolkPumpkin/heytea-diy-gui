@@ -20,6 +20,7 @@ namespace heytea_diy_gui
         private void FormMain_Load(object sender, EventArgs e)
         {
             MessageBox.Show("本软件为开源项目,作者拿浮木保证没有病毒,若杀毒软件误报,请点击信任/允许");
+            MessageBox.Show("现在只支持霸王茶姬,喜茶不可用orz");
             MessageBox.Show("接下来你会看到2-3个窗口,请把那个有一堆英文的最小化,不要叉掉qwq");
             while (true)
             {
@@ -90,11 +91,13 @@ namespace heytea_diy_gui
                 if (!ImageManager.Save())
                     return;
                 MessageBox.Show("最后一步!!!\n" +
-                                "1.打开手机端微信\n" +
-                                "2.打开小程序喜茶GO\n" +
-                                "3.点击点单->到店取,随便选一杯饮料,加入购物车,结算(别真的付钱)\n" +
-                                "4.点击DIY喜帖回归,邀你灵感一现 去定制\n" +
-                                "5.点击灵感创作,再点击右上角三个点,收藏(注意不是星标)\n" +
+                                "---以下操作仅需一次\n" +
+                                "-1.打开手机端微信\n" +
+                                "-2.打开小程序\n" +
+                                "-3.点击点单,随便选一杯饮料,加入购物车,结算(别真的付钱)\n" +
+                                "-4.点击定制喜帖\n" +
+                                "-5.点击开始创作,再点击右上角三个点,收藏(注意不是星标)\n" +
+                                "---以上操作仅需一次\n" +
                                 "6.打开电脑端微信->收藏->刚刚收藏的链接->灵感创作->创作喜帖\n" +
                                 "7.随便画两笔,提交");
                 MessageBox.Show("结束啦");

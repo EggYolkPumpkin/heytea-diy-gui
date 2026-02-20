@@ -129,7 +129,7 @@
             this.Controls.Add(this.panMain);
             this.Icon = ((System.Drawing.Icon)(resources.GetObject("$this.Icon")));
             this.Name = "FormMain";
-            this.Text = "喜茶杯贴diy";
+            this.Text = "茶姬杯贴diy";
             this.FormClosing += new System.Windows.Forms.FormClosingEventHandler(this.FormMain_FormClosing);
             this.Load += new System.EventHandler(this.FormMain_Load);
             this.panMain.ResumeLayout(false);
