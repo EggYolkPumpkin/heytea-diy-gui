@@ -17,6 +17,7 @@ namespace heytea_diy_gui
         {
             InitializeComponent();
         }
+        private ImageManager.ImageMode imageMode = ImageManager.ImageMode.BlackAndWhite;
         private void FormMain_Load(object sender, EventArgs e)
         {
             MessageBox.Show("本软件为开源项目,作者拿浮木保证没有病毒,若杀毒软件误报,请点击信任/允许");
@@ -60,7 +61,7 @@ namespace heytea_diy_gui
                 return;
             if (ImageManager.OriginalImage == null)
                 return;
-            ImageManager.RemoveColor((int)barThreshold.Value);
+            ImageManager.ProcessImage(imageMode, (int)barThreshold.Value);
             ImageManager.ResetView();
             ImageManager.RefreshDisplay();
             btnUpload.Enabled = true;
@@ -68,7 +69,7 @@ namespace heytea_diy_gui
 
         private void BarThreshold_ValueChanged(object sender, EventArgs e)
         {
-            ImageManager.RemoveColor((int)barThreshold.Value);
+            ImageManager.ProcessImage(imageMode, (int)barThreshold.Value);
             ImageManager.RefreshDisplay();
         }
 
@@ -103,6 +104,36 @@ namespace heytea_diy_gui
                 MessageBox.Show("结束啦");
                 break;
             }
+        }
+
+        private void btnChangeMode_Click(object sender, EventArgs e)
+        {
+            panStep2.Enabled = false;
+            if (imageMode == ImageManager.ImageMode.BlackAndWhite)
+            {
+                imageMode = ImageManager.ImageMode.Gray;
+                btnChangeMode.Text = "切换模式(当前:灰度)";
+                barThreshold.Enabled = false;
+                lblMode.Text = ("灰度模式:使用灰度,效果更好,但不保证能打印出来");
+
+            }
+            else if (imageMode == ImageManager.ImageMode.Gray)
+            {
+                imageMode = ImageManager.ImageMode.Colorful;
+                btnChangeMode.Text = "切换模式(当前:彩色)";
+                barThreshold.Enabled = false;
+                lblMode.Text = ("彩色模式:原图,不保证能成功上传,而且一定打印不出来");
+            }
+            else if (imageMode == ImageManager.ImageMode.Colorful)
+            {
+                imageMode = ImageManager.ImageMode.BlackAndWhite;
+                btnChangeMode.Text = "切换模式(当前:黑白)";
+                barThreshold.Enabled = true;
+                lblMode.Text = "黑白模式:只用黑白两种颜色,一定能打印出来";
+            }
+            ImageManager.ProcessImage(imageMode, (int)barThreshold.Value);
+            ImageManager.RefreshDisplay();
+            panStep2.Enabled = true;
         }
     }
 }

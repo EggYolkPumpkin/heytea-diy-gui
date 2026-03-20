@@ -26,9 +26,9 @@ namespace heytea_diy_gui
         public static Bitmap OriginalImage { get; private set; } = null;
 
         /// <summary>
-        /// 黑白图
+        /// 处理完的图片
         /// </summary>
-        public static Bitmap ColorlessImage { get; private set; } = null;
+        public static Bitmap ProcessedImage { get; private set; } = null;
 
         /// <summary>
         /// 用于展示的图片
@@ -39,6 +39,24 @@ namespace heytea_diy_gui
         /// picture box
         /// </summary>
         public static PictureBox BoxDisplay { get; private set; }
+        /// <summary>
+        /// 图像模式
+        /// </summary>
+        public enum ImageMode
+        {
+            /// <summary>
+            /// 黑白
+            /// </summary>
+            BlackAndWhite,
+            /// <summary>
+            /// 灰度
+            /// </summary>
+            Gray,
+            /// <summary>
+            /// 彩色
+            /// </summary>
+            Colorful
+        }
 
         // 平移和缩放参数
         private static float offsetX = 0;
@@ -70,8 +88,8 @@ namespace heytea_diy_gui
                         OriginalImage = new Bitmap(openFileDialog.FileName);
 
                         // 重置ColorlessImage
-                        ColorlessImage?.Dispose();
-                        ColorlessImage = null;
+                        ProcessedImage?.Dispose();
+                        ProcessedImage = null;
                         ResetView();
                         return true;
                     }
@@ -127,10 +145,11 @@ namespace heytea_diy_gui
             }
         }
         /// <summary>
-        /// 转黑白
+        /// 处理图像
         /// </summary>
-        /// <param name="threshold"></param>
-        public static void RemoveColor(int threshold)
+        /// <param name="mode">处理模式</param>
+        /// <param name="threshold">黑白模式的阈值（仅在BlackAndWhite模式下有效）</param>
+        public static void ProcessImage(ImageMode mode, int threshold = 127)
         {
             if (OriginalImage == null)
                 return;
@@ -140,8 +159,11 @@ namespace heytea_diy_gui
                 int width = OriginalImage.Width;
                 int height = OriginalImage.Height;
 
+                // 释放旧的资源
+                ProcessedImage?.Dispose();
+
                 // 创建新的位图
-                ColorlessImage = new Bitmap(width, height, PixelFormat.Format32bppArgb);
+                ProcessedImage = new Bitmap(width, height, PixelFormat.Format32bppArgb);
 
                 // 锁定位图数据
                 BitmapData originalData = OriginalImage.LockBits(
@@ -149,7 +171,7 @@ namespace heytea_diy_gui
                     ImageLockMode.ReadOnly,
                     PixelFormat.Format32bppArgb);
 
-                BitmapData colorlessData = ColorlessImage.LockBits(
+                BitmapData processedData = ProcessedImage.LockBits(
                     new Rectangle(0, 0, width, height),
                     ImageLockMode.WriteOnly,
                     PixelFormat.Format32bppArgb);
@@ -158,7 +180,7 @@ namespace heytea_diy_gui
                 {
                     // 获取指针和步长
                     IntPtr originalPtr = originalData.Scan0;
-                    IntPtr colorlessPtr = colorlessData.Scan0;
+                    IntPtr processedPtr = processedData.Scan0;
                     int stride = originalData.Stride;
                     int bytes = Math.Abs(stride) * height;
 
@@ -166,9 +188,9 @@ namespace heytea_diy_gui
                     byte[] originalBytes = new byte[bytes];
                     Marshal.Copy(originalPtr, originalBytes, 0, bytes);
 
-                    byte[] colorlessBytes = new byte[bytes];
+                    byte[] processedBytes = new byte[bytes];
 
-                    // 处理每个像素
+                    // 遍历每个像素，因为所有模式都需要处理透明度变白底的逻辑
                     for (int y = 0; y < height; y++)
                     {
                         for (int x = 0; x < width; x++)
@@ -180,59 +202,71 @@ namespace heytea_diy_gui
                             byte r = originalBytes[index + 2];
                             byte a = originalBytes[index + 3];
 
-                            // 如果像素完全透明，设为白色
-                            if (a == 0)
+                            // 1. 统一处理透明度：计算与白色背景混合后的 RGB 真实值
+                            double r_blend = r, g_blend = g, b_blend = b;
+
+                            if (a == 0) // 完全透明，直接设为纯白
                             {
-                                colorlessBytes[index] = 255;     // B
-                                colorlessBytes[index + 1] = 255; // G
-                                colorlessBytes[index + 2] = 255; // R
-                                colorlessBytes[index + 3] = 255; // A
-                                continue;
+                                r_blend = 255;
+                                g_blend = 255;
+                                b_blend = 255;
                             }
-
-                            // 计算灰度值 (使用加权平均)
-                            double gray = 0.299 * r + 0.587 * g + 0.114 * b;
-
-                            // 处理半透明像素：与白色背景混合
-                            if (a < 255)
+                            else if (a < 255) // 半透明，与白色混合
                             {
                                 double alpha = a / 255.0;
-                                gray = gray * alpha + 255 * (1 - alpha);
+                                r_blend = r * alpha + 255 * (1 - alpha);
+                                g_blend = g * alpha + 255 * (1 - alpha);
+                                b_blend = b * alpha + 255 * (1 - alpha);
                             }
 
-                            // 根据阈值设置黑白
-                            if (gray < threshold)
+                            // 2. 根据不同模式进行像素赋值
+                            if (mode == ImageMode.Colorful)
                             {
-                                colorlessBytes[index] = 0;     // B
-                                colorlessBytes[index + 1] = 0; // G
-                                colorlessBytes[index + 2] = 0; // R
-                                colorlessBytes[index + 3] = 255; // A
+                                // 彩色模式：直接使用混合白底后的 RGB 值
+                                processedBytes[index] = (byte)b_blend;     // B
+                                processedBytes[index + 1] = (byte)g_blend; // G
+                                processedBytes[index + 2] = (byte)r_blend; // R
+                                processedBytes[index + 3] = 255;           // A (Alpha通道固定设为不透明的255)
                             }
                             else
                             {
-                                colorlessBytes[index] = 255;     // B
-                                colorlessBytes[index + 1] = 255; // G
-                                colorlessBytes[index + 2] = 255; // R
-                                colorlessBytes[index + 3] = 255; // A
+                                // 灰度和黑白模式：基于混合后的真实颜色计算灰度值
+                                double gray = 0.299 * r_blend + 0.587 * g_blend + 0.114 * b_blend;
+
+                                if (mode == ImageMode.BlackAndWhite)
+                                {
+                                    byte bwValue = (byte)(gray < threshold ? 0 : 255);
+                                    processedBytes[index] = bwValue;
+                                    processedBytes[index + 1] = bwValue;
+                                    processedBytes[index + 2] = bwValue;
+                                    processedBytes[index + 3] = 255;
+                                }
+                                else if (mode == ImageMode.Gray)
+                                {
+                                    byte grayValue = (byte)Math.Min(255, Math.Max(0, gray));
+                                    processedBytes[index] = grayValue;
+                                    processedBytes[index + 1] = grayValue;
+                                    processedBytes[index + 2] = grayValue;
+                                    processedBytes[index + 3] = 255;
+                                }
                             }
                         }
                     }
 
                     // 将处理后的数据复制回位图
-                    Marshal.Copy(colorlessBytes, 0, colorlessPtr, bytes);
+                    Marshal.Copy(processedBytes, 0, processedPtr, bytes);
                 }
                 finally
                 {
                     OriginalImage.UnlockBits(originalData);
-                    ColorlessImage.UnlockBits(colorlessData);
+                    ProcessedImage.UnlockBits(processedData);
                 }
-                
             }
             catch (Exception ex)
             {
                 MessageBox.Show($"处理图像失败: {ex.Message}", "错误", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                ColorlessImage?.Dispose();
-                ColorlessImage = null;
+                ProcessedImage?.Dispose();
+                ProcessedImage = null;
             }
         }
 
@@ -280,7 +314,7 @@ namespace heytea_diy_gui
         // 鼠标移动事件
         private static void BoxDisplay_MouseMove(object sender, MouseEventArgs e)
         {
-            if (isDragging && ColorlessImage != null)
+            if (isDragging && ProcessedImage != null)
             {
                 // 计算移动距离
                 int deltaX = e.X - lastMousePos.X;
@@ -292,8 +326,8 @@ namespace heytea_diy_gui
 
                 /*
                 // 限制偏移范围
-                float maxOffsetX = Math.Max(0, ColorlessImage.Width - DisplayImage.Width / zoomScale);
-                float maxOffsetY = Math.Max(0, ColorlessImage.Height - DisplayImage.Height / zoomScale);
+                float maxOffsetX = Math.Max(0, ProcessedImage.Width - DisplayImage.Width / zoomScale);
+                float maxOffsetY = Math.Max(0, ProcessedImage.Height - DisplayImage.Height / zoomScale);
 
                 offsetX = Math.Max(0, Math.Min(offsetX, maxOffsetX));
                 offsetY = Math.Max(0, Math.Min(offsetY, maxOffsetY));
@@ -318,7 +352,7 @@ namespace heytea_diy_gui
         // 鼠标滚轮事件
         private static void BoxDisplay_MouseWheel(object sender, MouseEventArgs e)
         {
-            if (ColorlessImage != null)
+            if (ProcessedImage != null)
             {
                 // 计算缩放前的鼠标位置对应的图像位置
                 float imageX = offsetX + e.X / zoomScale;
@@ -343,8 +377,8 @@ namespace heytea_diy_gui
                 offsetY = imageY - e.Y / zoomScale;
 
                 // 限制偏移范围
-                float maxOffsetX = Math.Max(0, ColorlessImage.Width - DisplayImage.Width / zoomScale);
-                float maxOffsetY = Math.Max(0, ColorlessImage.Height - DisplayImage.Height / zoomScale);
+                float maxOffsetX = Math.Max(0, ProcessedImage.Width - DisplayImage.Width / zoomScale);
+                float maxOffsetY = Math.Max(0, ProcessedImage.Height - DisplayImage.Height / zoomScale);
 
                 offsetX = Math.Max(0, Math.Min(offsetX, maxOffsetX));
                 offsetY = Math.Max(0, Math.Min(offsetY, maxOffsetY));
@@ -358,7 +392,7 @@ namespace heytea_diy_gui
         // 刷新显示函数
         public static void RefreshDisplay()
         {
-            if (ColorlessImage == null || DisplayImage == null)
+            if (ProcessedImage == null || DisplayImage == null)
                 return;
 
             using (Graphics g = Graphics.FromImage(DisplayImage))
@@ -378,7 +412,7 @@ namespace heytea_diy_gui
                 Rectangle destRect = new Rectangle(0, 0, DisplayImage.Width, DisplayImage.Height);
 
                 // 绘制图像
-                g.DrawImage(ColorlessImage, destRect, srcRect, GraphicsUnit.Pixel);
+                g.DrawImage(ProcessedImage, destRect, srcRect, GraphicsUnit.Pixel);
             }
 
             // 刷新PictureBox
@@ -392,16 +426,16 @@ namespace heytea_diy_gui
             offsetY = 0;
             zoomScale = 1.0f;
 
-            if (ColorlessImage != null)
+            if (ProcessedImage != null)
             {
                 // 计算适合显示的初始缩放比例
-                float scaleX = (float)DisplayImage.Width / ColorlessImage.Width;
-                float scaleY = (float)DisplayImage.Height / ColorlessImage.Height;
+                float scaleX = (float)DisplayImage.Width / ProcessedImage.Width;
+                float scaleY = (float)DisplayImage.Height / ProcessedImage.Height;
                 zoomScale = Math.Min(scaleX, scaleY);
 
                 // 居中显示
-                offsetX = (ColorlessImage.Width - DisplayImage.Width / zoomScale) / 2;
-                offsetY = (ColorlessImage.Height - DisplayImage.Height / zoomScale) / 2;
+                offsetX = (ProcessedImage.Width - DisplayImage.Width / zoomScale) / 2;
+                offsetY = (ProcessedImage.Height - DisplayImage.Height / zoomScale) / 2;
             }
 
             RefreshDisplay();

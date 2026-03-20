@@ -27,7 +27,7 @@ namespace heytea_diy_gui
 
             if (!File.Exists(fullScriptPath))
             {
-                Console.WriteLine($"错误：找不到脚本文件: {fullScriptPath}");
+                MessageBox.Show($"错误：找不到脚本文件: {fullScriptPath}");
                 return false;
             }
 
@@ -57,7 +57,7 @@ namespace heytea_diy_gui
 
                 if (process == null)
                 {
-                    Console.WriteLine("错误：Powershell 进程未能启动。");
+                    MessageBox.Show("错误：Powershell 进程未能启动。");
                     return false;
                 }
 
@@ -78,7 +78,7 @@ namespace heytea_diy_gui
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"运行 PowerShell 脚本时发生错误：{ex.Message}");
+                MessageBox.Show($"运行 PowerShell 脚本时发生错误：{ex}");
                 return false;
             }
         }
